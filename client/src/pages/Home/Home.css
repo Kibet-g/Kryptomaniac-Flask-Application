@@ -1,0 +1,171 @@
+.home {
+    padding: 0px 10px;
+    background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(0,123,255,0.5) 70%);
+}
+
+.hero {
+    max-width: 600px;
+    margin: 80px auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 30px;
+}
+
+.hero h1 {
+    font-size: max(3vw, 30px);
+}
+
+.hero p {
+    width: 80%;
+    color: #e3e3e3;
+    line-height: 1.5;
+}
+
+.hero form {
+    padding: 8px;
+    width: 80%;
+    background-color: white;
+    border-radius: 5px;
+    font-size: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px; 
+}
+
+.hero form input {
+    padding: 12px;
+    border: 2px solid #ccc;
+    border-radius: 5px;
+    width: 70%;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.hero form input:focus {
+    border-color: #007BFF;
+    outline: none;
+}
+
+.hero button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007BFF;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.crypto-table {
+    max-width: 800px;
+    margin: 0 auto;
+    background: linear-gradient(rgba(84, 3, 255, 0.15), rgba(105, 2, 153, 0.15));
+    border-radius: 15px;
+    overflow: hidden;
+}
+ 
+.table-layout {
+    display: grid;
+    grid-template-columns: 0.5fr 2fr 1fr 1fr 1.5fr;
+    padding: 15px 20px;
+    align-items: center;
+    border-bottom: 1px solid #3c2c3c;
+    font-weight: bold;
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.table-layout:hover {
+    background-color: rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+}
+
+.table-layout p {
+    margin: 0;
+    padding: 10px 0;
+    text-align: center;
+}
+
+.market-cap {
+    text-align: right;
+}
+
+.table-layout:last-child {
+    border: none;
+}
+
+.table-layout div {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.table-layout div img {
+    width: 35px;
+}
+
+.table-layout .green {
+    color: #00D515;
+    text-align: center;
+}
+
+.table-layout .red {
+    color: red;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .table-layout {
+        grid-template-columns: 0.5fr 3fr 1fr 1fr;
+    }
+
+    .market-cap {
+        display: none;
+    }
+}
+
+@media (max-width: 500px) {
+    .table-layout div img {
+        width: 25px;
+    }
+
+    .table-layout {
+        font-size: 15px;
+    }
+
+    .hero form input {
+        width: 100px;
+    }
+}
+
+/* Pagination Styles */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.pagination button {
+    padding: 10px 20px;
+    margin: 0 5px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007BFF;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.pagination button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.pagination button:hover:not(:disabled) {
+    background-color: #0056b3;
+}

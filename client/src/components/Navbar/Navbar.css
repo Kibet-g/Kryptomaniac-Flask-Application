@@ -1,0 +1,45 @@
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 5%; /* Reduced padding for a more compact design */
+    color: #ddd;
+    border-bottom: 1px solid #3c3c3c; /* Thinner border */
+    background-color: #121212; /* Optional: a darker background for contrast */
+}
+
+.navbar .logo {
+    width: max(8vw, 80px); /* Reduced the logo size for a smaller appearance */
+    height: auto; /* Ensures the logo scales proportionally */
+}
+
+.navbar ul {
+    display: flex;
+    list-style: none;
+    gap: 20px; /* Reduced gap between list items */
+}
+
+.navbar li {
+    cursor: pointer;
+    font-size: 0.9em; /* Slightly smaller font size for items */
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: max(0.5vw, 8px); /* Reduced gap for a tighter fit */
+}
+
+.navbar select {
+    padding: 4px 6px; /* Smaller padding for a sleeker look */
+    border-radius: 4px; /* Reduced radius for minimal design */
+    border: 1px solid #e5e4e4; /* Thinner border */
+    background: transparent;
+    color: #e5e4e4;
+    font-size: 0.9em; /* Smaller font size */
+}
+
+.navbar option {
+    background: #0d064f;
+    color: #e5e4e4;
+}

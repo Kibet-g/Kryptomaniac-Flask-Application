@@ -10,20 +10,21 @@ const CoinContextProvider = (props) => {
   });
 
   const fetchAllCoin = useCallback(async () => {
-    const options = {
-      method: 'GET',
-      headers: { accept: 'application/json', 'x-cg-demo-api-key': 'CG-dUzuLDSJt8VrHDxtbCsPnbjH' }
-    };
-
-    fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=${currency.name}`, options)
-      .then(response => response.json())
-      .then(response => setAllCoin(response))
-      .catch(err => console.error(err));
-  }, [currency.name]);
+    try {
+      const response = await fetch("http://localhost:5555/cryptocurrencies");
+      if (!response.ok) {
+        throw new Error("Failed to fetch data from the backend");
+      }
+      const data = await response.json();
+      setAllCoin(data);
+    } catch (error) {
+      console.error("Error fetching cryptocurrencies:", error);
+    }
+  }, []);
 
   useEffect(() => {
     fetchAllCoin();
-  }, [currency, fetchAllCoin]);
+  }, [fetchAllCoin]);
 
   const contextValue = {
     allCoin,

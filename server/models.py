@@ -1,6 +1,12 @@
 from sqlalchemy.orm import validates
 from config import db
 
+class User(db.Model):
+    __tablename__ = 'user'
+
+    id = db.Column(db.Integer, primary_key=True)
+    cryptocurrencies = db.relationship('UserCryptocurrency', back_populates='user', cascade='all, delete-orphan')
+
 class Cryptocurrency(db.Model):
     __tablename__ = 'cryptocurrencies'
 
@@ -12,8 +18,9 @@ class Cryptocurrency(db.Model):
     created_at = db.Column(db.DateTime, server_default=db.func.now())
 
     # Relationships
-    watchlists = db.relationship('Watchlist', back_populates='cryptocurrency', cascade='all, delete-orphan')
+    user_associations = db.relationship('UserCryptocurrency', back_populates='cryptocurrency', cascade='all, delete-orphan')
     price_history = db.relationship('PriceHistory', back_populates='cryptocurrency', cascade='all, delete-orphan')
+    trending_entries = db.relationship('TrendingCryptocurrency', back_populates='cryptocurrency', cascade='all, delete-orphan')
 
     @validates('symbol')
     def validate_symbol(self, key, value):
@@ -31,16 +38,17 @@ class Cryptocurrency(db.Model):
         assert value.strip(), "Name cannot be empty or whitespace"
         return value
 
-class Watchlist(db.Model):
-    __tablename__ = 'watchlists'
+class UserCryptocurrency(db.Model):
+    __tablename__ = 'user_Cryptocurrencies'
 
     id = db.Column(db.Integer, primary_key=True)
-    cryptocurrency_id = db.Column(db.Integer, db.ForeignKey('cryptocurrencies.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    crypto_id = db.Column(db.Integer, db.ForeignKey('cryptocurrencies.id'), nullable=False)
     alert_price = db.Column(db.Numeric(20, 8), nullable=False)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
 
     # Relationships
-    cryptocurrency = db.relationship('Cryptocurrency', back_populates='watchlists')
+    user = db.relationship('User', back_populates='cryptocurrencies')
+    cryptocurrency = db.relationship('Cryptocurrency', back_populates='user_associations')
 
     @validates('alert_price')
     def validate_alert_price(self, key, value):
@@ -61,4 +69,20 @@ class PriceHistory(db.Model):
     @validates('price')
     def validate_price(self, key, value):
         assert value > 0, "Price must be greater than zero"
+        return value
+
+class TrendingCryptocurrency(db.Model):
+    __tablename__ = 'trending_cryptocurrencies'
+
+    id = db.Column(db.Integer, primary_key=True)
+    cryptocurrency_id = db.Column(db.Integer, db.ForeignKey('cryptocurrencies.id'), nullable=False)
+    rank = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, server_default=db.func.now())
+
+    # Relationships
+    cryptocurrency = db.relationship('Cryptocurrency', back_populates='trending_entries')
+
+    @validates('rank')
+    def validate_rank(self, key, value):
+        assert value > 0, "Rank must be a positive integer"
         return value

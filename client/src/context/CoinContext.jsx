@@ -3,7 +3,7 @@ import { createContext, useEffect, useState, useCallback } from "react";
 export const CoinContext = createContext();
 
 const CoinContextProvider = (props) => {
-  const [allCoin, setAllCoin] = useState([]);
+  const [allCoin, setAllCoin] = useState([]); // Ensure it's always an array
   const [currency, setCurrency] = useState({
     name: "usd",
     symbol: "$",
@@ -16,9 +16,10 @@ const CoinContextProvider = (props) => {
         throw new Error("Failed to fetch data from the backend");
       }
       const data = await response.json();
-      setAllCoin(data);
+      setAllCoin(data || []); // Ensure it's always an array
     } catch (error) {
       console.error("Error fetching cryptocurrencies:", error);
+      setAllCoin([]); // Prevent undefined issues
     }
   }, []);
 

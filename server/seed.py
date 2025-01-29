@@ -1,7 +1,7 @@
 import requests
 from decimal import Decimal
 from app import app
-from models import db, User, Cryptocurrency, UserCryptocurrency, PriceHistory, TrendingCryptocurrency
+from models import db, Cryptocurrency, PriceHistory, TrendingCryptocurrency
 
 API_URL = "https://api.coingecko.com/api/v3/coins/markets"
 CURRENCY = "usd"
@@ -17,7 +17,13 @@ if __name__ == '__main__':
         try:
             response = requests.get(
                 API_URL,
-                params={"vs_currency": CURRENCY},
+                params={
+                    "vs_currency": CURRENCY,
+                    "order": "market_cap_desc",
+                    "per_page": 10,
+                    "page": 1,
+                    "price_change_percentage": "24h"
+                },
                 headers={"accept": "application/json", "x-cg-demo-api-key": API_KEY}
             )
             response.raise_for_status()
@@ -28,12 +34,13 @@ if __name__ == '__main__':
 
         # Seed Cryptocurrencies and PriceHistory
         cryptocurrencies = []
-        for coin in data[:10]:  # Limit to the top 10 cryptocurrencies for this seed
+        for coin in data[:10]:  # Seeding the top 10 cryptocurrencies
             cryptocurrency = Cryptocurrency(
                 name=coin['name'],
                 symbol=coin['symbol'].upper(),
                 market_price=Decimal(str(coin['current_price'])),
-                market_cap=Decimal(str(coin.get('market_cap', 0)))
+                market_cap=Decimal(str(coin.get('market_cap', 0))),
+                logo_url=coin.get('image'),
             )
             cryptocurrencies.append(cryptocurrency)
             db.session.add(cryptocurrency)
@@ -55,7 +62,7 @@ if __name__ == '__main__':
                 rank=rank
             )
             db.session.add(trending_crypto)
-        
+
         db.session.commit()
 
-        print("Seeding complete with real-time data!")
+        print("Seeding complete with real-time data")

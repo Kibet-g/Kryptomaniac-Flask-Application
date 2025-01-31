@@ -25,7 +25,7 @@ const Login = () => {
       if (!response.ok) throw new Error(data.error || "Login failed");
   
       setUser(data.user);  // Set user in context
-      navigate("/home");
+      navigate("/home");  // Redirect to home after successful login
     } catch (err) {
       setError(err.message);
     }

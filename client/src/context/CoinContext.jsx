@@ -9,13 +9,12 @@ const CoinContextProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch cryptocurrencies if user is logged in
   const fetchAllCoin = useCallback(async () => {
     if (!user) return;
 
     try {
       setLoading(true);
-      const response = await fetch("http://127.0.0.1:5000/cryptocurrencies", {
+      const response = await fetch("http://127.0.0.1:5000/cryptocurrencies/", {
         credentials: "include",
       });
 
@@ -32,7 +31,6 @@ const CoinContextProvider = ({ children }) => {
     }
   }, [user]);
 
-  // Check user session
   const checkUserSession = useCallback(async () => {
     try {
       const response = await fetch("http://127.0.0.1:5000/check-session", {

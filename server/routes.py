@@ -60,14 +60,12 @@ def check_session():
 # -------------------- CRYPTOCURRENCY ROUTES --------------------
 
 @routes.route("/cryptocurrencies", methods=["GET"])
-@login_required
 def get_cryptocurrencies():
     cryptocurrencies = Cryptocurrency.query.all()
     return jsonify([crypto.to_dict() for crypto in cryptocurrencies])
 
 
 @routes.route("/cryptocurrencies/<int:crypto_id>", methods=["GET"])
-@login_required
 def get_cryptocurrency(crypto_id):
     cryptocurrency = Cryptocurrency.query.get(crypto_id)
     if not cryptocurrency:
@@ -77,7 +75,7 @@ def get_cryptocurrency(crypto_id):
 # -------------------- PRICE HISTORY --------------------
 
 @routes.route("/price-history/<int:cryptocurrency_id>", methods=["GET"])
-@login_required
+
 def get_price_history(cryptocurrency_id):
     history = PriceHistory.query.filter_by(cryptocurrency_id=cryptocurrency_id).all()
     return jsonify([{"id": h.id, "price": str(h.price), "recorded_at": h.recorded_at.isoformat()} for h in history])

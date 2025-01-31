@@ -9,16 +9,16 @@ const Coin = () => {
   const [coinData, setCoinData] = useState(null);
   const { currency } = useContext(CoinContext);
   const [historicalData, setHistoricalData] = useState(null);
-  const [loadingPercentage, setLoadingPercentage] = useState(0); // New state for percentage
+  const [loadingPercentage, setLoadingPercentage] = useState(0);
 
   useEffect(() => {
     const fetchCoinData = async () => {
       try {
-        const response = await fetch(`https://api.coingecko.com/api/v3/coins/${coinId}`, {
+        const response = await fetch(`http://127.0.0.1:5000/cryptocurrencies/${coinId}`, {
           method: 'GET',
           headers: {
-            accept: 'application/json',
-            'x-cg-demo-api-key': 'CG-vr9q42xzksSXXNze9mYXezYy',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`, // If you use authentication
           },
         });
         const data = await response.json();
@@ -32,18 +32,18 @@ const Coin = () => {
     const fetchHistoricalData = async () => {
       try {
         const response = await fetch(
-          `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=${currency.name}&days=10&interval=daily`,
+          `http://127.0.0.1:5000/cryptocurrencies/${coinId}/historical?currency=${currency.name}`,
           {
             method: 'GET',
             headers: {
-              accept: 'application/json',
-              'x-cg-demo-api-key': 'CG-vr9q42xzksSXXNze9mYXezYy',
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
             },
           }
         );
         const data = await response.json();
         setHistoricalData(data);
-        setLoadingPercentage((prev) => prev + 50); // Increment loading progress
+        setLoadingPercentage((prev) => prev + 50);
       } catch (error) {
         console.error('Error fetching historical data:', error);
       }
@@ -63,7 +63,7 @@ const Coin = () => {
   }
 
   if (!coinData || !coinData.image || !historicalData) {
-    return <div>Error loading data. Please try again later.</div>; // Handle null data gracefully
+    return <div>Error loading data. Please try again later.</div>;
   }
 
   return (

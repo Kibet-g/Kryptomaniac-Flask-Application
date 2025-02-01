@@ -61,6 +61,18 @@ class UserCryptocurrency(db.Model):
     user = db.relationship('User', back_populates='cryptocurrencies')
     cryptocurrency = db.relationship('Cryptocurrency', back_populates='user_associations')
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "cryptocurrency_id": self.cryptocurrency_id,
+            "alert_price": float(self.alert_price)
+        }
+
+    # Relationships
+    user = db.relationship('User', back_populates='cryptocurrencies')
+    cryptocurrency = db.relationship('Cryptocurrency', back_populates='user_associations')
+
 class PriceHistory(db.Model):
     __tablename__ = 'price_history'
 

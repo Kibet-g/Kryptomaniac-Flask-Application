@@ -1,6 +1,7 @@
-import React, { useEffect, useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CoinContext } from '../../context/CoinContext';
+import Swal from 'sweetalert2';
 
 const Home = () => {
   const { currency } = useContext(CoinContext);
@@ -8,14 +9,13 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const coinsPerPage = 100;
+  const coinsPerPage = 10;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await fetch('http://127.0.0.1:5000/cryptocurrencies');
         const data = await response.json();
-        console.log('Fetched Data:', data);
         setAllCoin(data);
         setLoading(false);
       } catch (error) {
@@ -23,7 +23,6 @@ const Home = () => {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
@@ -32,16 +31,98 @@ const Home = () => {
     setCurrentPage(1);
   };
 
+  // Updated handleAddToWatchlist to check authentication via /me endpoint
+  const handleAddToWatchlist = async (coin, e) => {
+    // Prevent the row's Link navigation when clicking on the button.
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Check if the user is authenticated before making the request.
+    try {
+      const authCheck = await fetch('http://127.0.0.1:5000/me', {
+        credentials: 'include',
+      });
+      const authData = await authCheck.json();
+      if (!authData || !authData.id) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Not Logged In',
+          text: 'Please log in to add coins to your watchlist.',
+        });
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking authentication:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'An error occurred while checking authentication.',
+      });
+      return;
+    }
+
+    // Prompt for alert price using SweetAlert2.
+    const { value: alertPrice } = await Swal.fire({
+      title: `Enter alert price for ${coin.name}`,
+      input: 'text',
+      inputLabel: 'Alert Price',
+      inputPlaceholder: 'Enter alert price',
+      showCancelButton: true,
+      inputValidator: (value) => {
+        if (!value) {
+          return 'You need to enter a value!';
+        }
+      },
+    });
+
+    if (!alertPrice) return;
+
+    try {
+      const response = await fetch('http://127.0.0.1:5000/user-cryptocurrencies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Ensure credentials are passed for authentication
+        body: JSON.stringify({
+          crypto_id: coin.id,  // This id comes from the cryptocurrencies table.
+          alert_price: alertPrice,
+        }),
+      });
+
+      if (response.ok) {
+        Swal.fire({
+          icon: 'success',
+          title: `${coin.name} added to your watchlist!`,
+          showConfirmButton: false,
+          timer: 1500,
+        });
+      } else {
+        const errData = await response.json();
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errData.error || 'Failed to add to watchlist.',
+        });
+      }
+    } catch (error) {
+      console.error('Error adding to watchlist:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'An error occurred while adding to the watchlist.',
+      });
+    }
+  };
+
+  // Filtering and pagination
   const filteredCoins = allCoin.filter(
     (coin) =>
       coin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      coin.symbol.toLowerCase().includes(searchQuery.toLowerCase()) // Now includes symbol search
+      coin.symbol.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const indexOfLastCoin = currentPage * coinsPerPage;
   const indexOfFirstCoin = indexOfLastCoin - coinsPerPage;
   const currentCoins = filteredCoins.slice(indexOfFirstCoin, indexOfLastCoin);
-
   const totalPages = Math.ceil(filteredCoins.length / coinsPerPage);
   const nextPage = () => setCurrentPage((prevPage) => Math.min(prevPage + 1, totalPages));
   const prevPage = () => setCurrentPage((prevPage) => Math.max(prevPage - 1, 1));
@@ -59,20 +140,10 @@ const Home = () => {
       ) : (
         <div>
           {/* Search Bar */}
-          <div
-            style={{
-              maxWidth: '600px',
-              margin: '50px auto',
-              textAlign: 'center',
-            }}
-          >
+          <div style={{ maxWidth: '600px', margin: '50px auto', textAlign: 'center' }}>
             <form
               onSubmit={(e) => e.preventDefault()}
-              style={{
-                display: 'flex',
-                justifyContent: 'center',
-                gap: '10px',
-              }}
+              style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}
             >
               <input
                 type="text"
@@ -119,7 +190,7 @@ const Home = () => {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '0.5fr 2fr 1fr 1fr 1.5fr',
+                gridTemplateColumns: '0.5fr 2fr 1fr 1fr 1.5fr 1fr',
                 padding: '15px',
                 fontWeight: 'bold',
                 backgroundColor: '#007BFF',
@@ -128,66 +199,66 @@ const Home = () => {
               }}
             >
               <p>#</p>
-              <p>Coin</p>
+              <p>Coin Name</p>
               <p>Price ({currency.symbol || '$'})</p>
-              <p>24h Change</p>
               <p>Market Cap</p>
+              <p>Add To WatchList</p>
             </div>
 
             {currentCoins.map((coin, index) => (
-              <Link
-                to={`/coin/${coin.id}`}
+              <div
                 key={coin.id}
-                style={{ textDecoration: 'none', color: 'black' }}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '0.5fr 2fr 1fr 1fr 1.5fr 1fr',
+                  padding: '12px',
+                  borderBottom: '1px solid #ddd',
+                  alignItems: 'center',
+                }}
               >
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '0.5fr 2fr 1fr 1fr 1.5fr',
-                    padding: '12px',
-                    borderBottom: '1px solid #ddd',
-                    alignItems: 'center',
-                  }}
+                <Link
+                  to={`/coin/${coin.id}`}
+                  style={{ display: 'contents', textDecoration: 'none', color: 'black' }}
                 >
                   <p>{indexOfFirstCoin + index + 1}</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <img
-                      src={coin.image || 'https://via.placeholder.com/30'}
+                      src={coin.logo_url || 'https://via.placeholder.com/30'}
                       alt={coin.name}
                       style={{ width: '30px' }}
                     />
-                    <p>{coin.name} ({coin.symbol.toUpperCase()})</p>
+                    <p>
+                      {coin.name} ({coin.symbol.toUpperCase()})
+                    </p>
                   </div>
                   <p>
                     {currency.symbol || '$'}
-                    {coin.current_price ? coin.current_price.toLocaleString() : 'N/A'}
-                  </p>
-                  <p
-                    style={{
-                      color: coin.price_change_percentage_24h > 0 ? 'green' : 'red',
-                    }}
-                  >
-                    {coin.price_change_percentage_24h
-                      ? coin.price_change_percentage_24h.toFixed(2)
-                      : 'N/A'}
-                    %
+                    {coin.market_price ? Number(coin.market_price).toLocaleString() : 'N/A'}
                   </p>
                   <p>
                     {currency.symbol || '$'}
-                    {coin.market_cap ? coin.market_cap.toLocaleString() : 'N/A'}
+                    {coin.market_cap ? Number(coin.market_cap).toLocaleString() : 'N/A'}
                   </p>
-                </div>
-              </Link>
+                </Link>
+                {/* "Add to WatchList" Button */}
+                <button
+                  onClick={(e) => handleAddToWatchlist(coin, e)}
+                  style={{
+                    padding: '8px 12px',
+                    border: 'none',
+                    borderRadius: '5px',
+                    backgroundColor: '#28a745',
+                    color: 'white',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Add
+                </button>
+              </div>
             ))}
 
             {/* Pagination */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'center',
-                margin: '20px 0',
-              }}
-            >
+            <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }}>
               <button
                 onClick={prevPage}
                 disabled={currentPage === 1}

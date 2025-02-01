@@ -5,7 +5,7 @@ from models import db, Cryptocurrency, PriceHistory, TrendingCryptocurrency
 
 API_URL = "https://api.coingecko.com/api/v3/coins/markets"
 CURRENCY = "usd"
-API_KEY = "CG-dUzuLDSJt8VrHDxtbCsPnbjH"  # Replace with your actual API key
+API_KEY = "CG-4oeYbHRkBCY8kTQ1YXbyV7GF"  # Replace with your actual API key
 
 if __name__ == '__main__':
     with app.app_context():
@@ -20,7 +20,7 @@ if __name__ == '__main__':
                 params={
                     "vs_currency": CURRENCY,
                     "order": "market_cap_desc",
-                    "per_page": 10,
+                    "per_page": 100,  # Changed to 100 to seed 100 cryptocurrencies
                     "page": 1,
                     "price_change_percentage": "24h"
                 },
@@ -34,7 +34,13 @@ if __name__ == '__main__':
 
         # Seed Cryptocurrencies and PriceHistory
         cryptocurrencies = []
-        for coin in data[:10]:  # Seeding the top 10 cryptocurrencies
+        for coin in data[:100]:  # Iterate over the 100 cryptocurrencies returned
+            # Check if cryptocurrency with the same symbol already exists
+            existing_crypto = Cryptocurrency.query.filter_by(symbol=coin['symbol'].upper()).first()
+            if existing_crypto:
+                print(f"Skipping {coin['name']} (symbol: {coin['symbol'].upper()}) - Already exists in the database.")
+                continue
+
             cryptocurrency = Cryptocurrency(
                 name=coin['name'],
                 symbol=coin['symbol'].upper(),
@@ -45,7 +51,7 @@ if __name__ == '__main__':
             cryptocurrencies.append(cryptocurrency)
             db.session.add(cryptocurrency)
 
-            # Add initial price history
+            # Add initial price history for each cryptocurrency
             price_history = PriceHistory(
                 cryptocurrency=cryptocurrency,
                 price=Decimal(str(coin['current_price'])),
@@ -55,7 +61,7 @@ if __name__ == '__main__':
 
         db.session.commit()
 
-        # Seed Trending Cryptocurrencies
+        # Seed Trending Cryptocurrencies with a ranking based on the order from CoinGecko
         for rank, crypto in enumerate(cryptocurrencies, start=1):
             trending_crypto = TrendingCryptocurrency(
                 cryptocurrency=crypto,

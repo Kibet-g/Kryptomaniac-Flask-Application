@@ -14,7 +14,7 @@ const Coin = () => {
   useEffect(() => {
     const fetchCoinData = async () => {
       try {
-        const response = await fetch(`http://127.0.0.1:5000/cryptocurrencies${coinId}`, {
+        const response = await fetch(`http://127.0.0.1:5000/cryptocurrencies/${coinId}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -41,6 +41,7 @@ const Coin = () => {
       }
     };
 
+    // Reset loading percentage and fetch new data whenever currency or coinId changes
     setLoadingPercentage(0);
     fetchCoinData();
     fetchHistoricalData();
@@ -60,35 +61,36 @@ const Coin = () => {
 
   return (
     <div className="coin">
+      {/* Header: Image and Coin Name */}
       <div className="coin-name">
-        <img src={coinData.image_url} alt={`${coinData.name}`} />
+        <img src={coinData.logo_url} alt={coinData.name} />
         <p>
-          <strong>{coinData.name} ({coinData.symbol.toUpperCase()})</strong>
+          <strong>
+            {coinData.name} ({coinData.symbol.toUpperCase()})
+          </strong>
         </p>
       </div>
+      
+      {/* Chart */}
       <div className="coin-chart">
         <LineChart historicalData={historicalData} />
       </div>
+
+      {/* Coin Information */}
       <div className="coin-info">
         <ul>
-          <li>Crypto Market Rank</li>
-          <li>{coinData.market_cap_rank || 'N/A'}</li>
-        </ul>
-        <ul>
           <li>Current Price</li>
-          <li>{currency.symbol} {coinData.current_price ? coinData.current_price.toLocaleString() : 'N/A'}</li>
+          <li>
+            {currency.symbol}{' '}
+            {coinData.market_price ? Number(coinData.market_price).toLocaleString() : 'N/A'}
+          </li>
         </ul>
         <ul>
           <li>Market Cap</li>
-          <li>{currency.symbol} {coinData.market_cap ? coinData.market_cap.toLocaleString() : 'N/A'}</li>
-        </ul>
-        <ul>
-          <li>24 Hour High</li>
-          <li>{currency.symbol} {coinData.high_24h ? coinData.high_24h.toLocaleString() : 'N/A'}</li>
-        </ul>
-        <ul>
-          <li>24 Hour Low</li>
-          <li>{currency.symbol} {coinData.low_24h ? coinData.low_24h.toLocaleString() : 'N/A'}</li>
+          <li>
+            {currency.symbol}{' '}
+            {coinData.market_cap ? Number(coinData.market_cap).toLocaleString() : 'N/A'}
+          </li>
         </ul>
       </div>
     </div>

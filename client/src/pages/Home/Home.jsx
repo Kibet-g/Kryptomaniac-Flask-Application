@@ -16,6 +16,7 @@ const Home = () => {
       try {
         const response = await fetch('http://127.0.0.1:5000/cryptocurrencies');
         const data = await response.json();
+        console.log('Fetched Data:', data);
         setAllCoin(data);
         setLoading(false);
       } catch (error) {
@@ -23,6 +24,7 @@ const Home = () => {
         setLoading(false);
       }
     };
+
     fetchData();
   }, []);
 
@@ -31,37 +33,13 @@ const Home = () => {
     setCurrentPage(1);
   };
 
-  // Updated handleAddToWatchlist to check authentication via /me endpoint
+  // Function to add a coin to the watchlist using SweetAlert2
   const handleAddToWatchlist = async (coin, e) => {
-    // Prevent the row's Link navigation when clicking on the button.
+    // Prevent the Link navigation when clicking on the button.
     e.preventDefault();
     e.stopPropagation();
 
-    // Check if the user is authenticated before making the request.
-    try {
-      const authCheck = await fetch('http://127.0.0.1:5000/me', {
-        credentials: 'include',
-      });
-      const authData = await authCheck.json();
-      if (!authData || !authData.id) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Not Logged In',
-          text: 'Please log in to add coins to your watchlist.',
-        });
-        return;
-      }
-    } catch (error) {
-      console.error('Error checking authentication:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'An error occurred while checking authentication.',
-      });
-      return;
-    }
-
-    // Prompt for alert price using SweetAlert2.
+    // Use SweetAlert2 for input prompt
     const { value: alertPrice } = await Swal.fire({
       title: `Enter alert price for ${coin.name}`,
       input: 'text',
@@ -75,15 +53,17 @@ const Home = () => {
       },
     });
 
-    if (!alertPrice) return;
+    if (!alertPrice) {
+      return; // If the user cancels or no value is provided, exit.
+    }
 
     try {
       const response = await fetch('http://127.0.0.1:5000/user-cryptocurrencies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Ensure credentials are passed for authentication
+        credentials: 'include', // Include credentials if your endpoint requires authentication
         body: JSON.stringify({
-          crypto_id: coin.id,  // This id comes from the cryptocurrencies table.
+          crypto_id: coin.id,
           alert_price: alertPrice,
         }),
       });
@@ -113,7 +93,7 @@ const Home = () => {
     }
   };
 
-  // Filtering and pagination
+  // Filter coins based on search query
   const filteredCoins = allCoin.filter(
     (coin) =>
       coin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -123,27 +103,43 @@ const Home = () => {
   const indexOfLastCoin = currentPage * coinsPerPage;
   const indexOfFirstCoin = indexOfLastCoin - coinsPerPage;
   const currentCoins = filteredCoins.slice(indexOfFirstCoin, indexOfLastCoin);
+
   const totalPages = Math.ceil(filteredCoins.length / coinsPerPage);
-  const nextPage = () => setCurrentPage((prevPage) => Math.min(prevPage + 1, totalPages));
-  const prevPage = () => setCurrentPage((prevPage) => Math.max(prevPage - 1, 1));
+  const nextPage = () =>
+    setCurrentPage((prevPage) => Math.min(prevPage + 1, totalPages));
+  const prevPage = () =>
+    setCurrentPage((prevPage) => Math.max(prevPage - 1, 1));
 
   return (
     <div
       style={{
         padding: '10px',
-        background: 'radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(0,123,255,0.5) 70%)',
+        background:
+          'radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(0,123,255,0.5) 70%)',
         minHeight: '100vh',
       }}
     >
       {loading ? (
-        <p style={{ textAlign: 'center', fontSize: '18px' }}>Loading data...</p>
+        <p style={{ textAlign: 'center', fontSize: '18px' }}>
+          Loading data...
+        </p>
       ) : (
         <div>
           {/* Search Bar */}
-          <div style={{ maxWidth: '600px', margin: '50px auto', textAlign: 'center' }}>
+          <div
+            style={{
+              maxWidth: '600px',
+              margin: '50px auto',
+              textAlign: 'center',
+            }}
+          >
             <form
               onSubmit={(e) => e.preventDefault()}
-              style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '10px',
+              }}
             >
               <input
                 type="text"
@@ -201,6 +197,7 @@ const Home = () => {
               <p>#</p>
               <p>Coin Name</p>
               <p>Price ({currency.symbol || '$'})</p>
+              {/*<p>24h Change</p>*/} 
               <p>Market Cap</p>
               <p>Add To WatchList</p>
             </div>
@@ -216,9 +213,14 @@ const Home = () => {
                   alignItems: 'center',
                 }}
               >
+                {/* Clicking anywhere in this row (except the button) navigates to coin details */}
                 <Link
                   to={`/coin/${coin.id}`}
-                  style={{ display: 'contents', textDecoration: 'none', color: 'black' }}
+                  style={{
+                    display: 'contents', // allows the grid layout to persist
+                    textDecoration: 'none',
+                    color: 'black',
+                  }}
                 >
                   <p>{indexOfFirstCoin + index + 1}</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -258,7 +260,13 @@ const Home = () => {
             ))}
 
             {/* Pagination */}
-            <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                margin: '20px 0',
+              }}
+            >
               <button
                 onClick={prevPage}
                 disabled={currentPage === 1}

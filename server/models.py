@@ -1,4 +1,3 @@
-from sqlalchemy.orm import validates
 from config import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
@@ -11,7 +10,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), nullable=False, unique=True)
     password_hash = db.Column(db.String(255), nullable=False)
 
-    # Relationships
+    # Relationship with user cryptocurrencies
     cryptocurrencies = db.relationship('UserCryptocurrency', back_populates='user', cascade='all, delete-orphan')
 
     def set_password(self, password):
@@ -57,7 +56,7 @@ class UserCryptocurrency(db.Model):
     cryptocurrency_id = db.Column(db.Integer, db.ForeignKey('cryptocurrencies.id'), nullable=False)
     alert_price = db.Column(db.Numeric(20, 8), nullable=False)
 
-    # Relationships
+    # Relationships (declared only once)
     user = db.relationship('User', back_populates='cryptocurrencies')
     cryptocurrency = db.relationship('Cryptocurrency', back_populates='user_associations')
 
@@ -69,10 +68,6 @@ class UserCryptocurrency(db.Model):
             "alert_price": float(self.alert_price)
         }
 
-    # Relationships
-    user = db.relationship('User', back_populates='cryptocurrencies')
-    cryptocurrency = db.relationship('Cryptocurrency', back_populates='user_associations')
-
 class PriceHistory(db.Model):
     __tablename__ = 'price_history'
 
@@ -81,7 +76,7 @@ class PriceHistory(db.Model):
     price = db.Column(db.Numeric(20, 8), nullable=False)
     recorded_at = db.Column(db.DateTime, nullable=False, server_default=db.func.now())
 
-    # Relationships
+    # Relationship
     cryptocurrency = db.relationship('Cryptocurrency', back_populates='price_history')
 
 class TrendingCryptocurrency(db.Model):
@@ -92,5 +87,5 @@ class TrendingCryptocurrency(db.Model):
     rank = db.Column(db.Integer, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, server_default=db.func.now())
 
-    # Relationships
+    # Relationship
     cryptocurrency = db.relationship('Cryptocurrency', back_populates='trending_entries')

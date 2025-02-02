@@ -4,7 +4,7 @@ import Navbar from './components/Navbar/Navbar';
 import Home from './pages/Home/Home';
 import Coin from './pages/Home/Coin/Coin';
 import Register from './pages/Register';
-import Login from './pages/Login'; // Import Login page
+import Login from './pages/Login'; // Login page
 import Footer from './components/Footer/Footer';
 import { CoinContext } from './context/CoinContext';
 
@@ -15,12 +15,12 @@ const App = () => {
     <div className='app'>
       <Navbar />
       <Routes>
-        <Route path='/' element={user ? <Home /> : <Navigate to='/login' />} />
-        <Route path='/login' element={user ? <Navigate to='/' /> : <Login />} />
-        <Route path='/register' element={<Register />} />
-        <Route path='/coin/:coinId' element={user ? <Coin /> : <Navigate to='/login' />} />
-      </Routes>
-      <Footer />
+  <Route path='/' element={user ? <Home /> : <Navigate to='/login' />} />
+  <Route path='/home' element={user ? <Home /> : <Navigate to='/login' />} />
+  <Route path='/login' element={user ? <Navigate to='/' /> : <Login />} />
+  <Route path='/register' element={<Register />} />
+  <Route path='/coin/:coinId' element={user ? <Coin /> : <Navigate to='/login' />} />
+</Routes>
     </div>
   );
 };

@@ -5,22 +5,39 @@ const LineChart = ({ historicalData }) => {
   const [data, setData] = useState([["Date", "Prices"]]);
 
   useEffect(() => {
-    let dataCopy = [["Date", "Prices"]];
-    if (historicalData && historicalData.prices) {
-      historicalData.prices.map((item) => {
-        return dataCopy.push([`${new Date(item[0]).toLocaleDateString().slice(0, -5)}`, item[1]]);
-      });
-      setData(dataCopy);
+    if (historicalData) {
+      const formattedData = historicalData.map((item) => [
+        new Date(item.recorded_at),
+        parseFloat(item.price),
+      ]);
+      setData([ ["Date", "Prices"], ...formattedData ]);
     }
   }, [historicalData]);
 
+  const options = {
+    title: "Historical Price Data",
+    curveType: "function",
+    legend: { position: "bottom" },
+    backgroundColor: "#f4f4f4",
+    hAxis: {
+      textStyle: { color: "#333", fontSize: 12 },
+    },
+    vAxis: {
+      textStyle: { color: "#333", fontSize: 12 },
+      gridlines: { color: "#ccc" },
+    },
+  };
+
   return (
-    <Chart
-      chartType="LineChart"
-      data={data}
-      height="100%"
-      legendToggle
-    />
+    <div style={{ width: "100%", height: "400px" }}>
+      <Chart
+        chartType="LineChart"
+        data={data}
+        options={options}
+        width="100%"
+        height="100%"
+      />
+    </div>
   );
 };
 

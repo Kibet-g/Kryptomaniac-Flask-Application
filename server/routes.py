@@ -20,14 +20,13 @@ def register():
         return jsonify({"error": "User already exists"}), 409
 
     user = User(username=username, email=email)
-    user.set_password(password)  # Hash password
+    user.set_password(password)  # Hash the password
 
     db.session.add(user)
     db.session.commit()
 
     return jsonify({"message": "User registered successfully"}), 201
-
-
+    #OUR LOGIN ENDPOINT
 @routes.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
@@ -39,10 +38,9 @@ def login():
     if not user or not user.check_password(password):
         return jsonify({"error": "Invalid email or password"}), 401
 
-    login_user(user, remember=True)  # 🔹 Ensure session persists
-
+    login_user(user, remember=True)  # Ensure session persists
     return jsonify({"message": "Login successful", "user": {"id": user.id, "email": user.email}}), 200
-
+#OUR LOGOUT ENDPOINT
 
 @routes.route("/logout", methods=["POST"])
 @login_required
@@ -50,20 +48,17 @@ def logout():
     logout_user()
     return jsonify({"message": "Logged out successfully"}), 200
 
-
 @routes.route("/check-session", methods=["GET"])
 def check_session():
     if current_user.is_authenticated:
         return jsonify({"user": {"id": current_user.id, "email": current_user.email}})
     return jsonify({"error": "User not authenticated"}), 401
 
-
 @routes.route("/me", methods=["GET"])
 def get_current_user():
     if current_user.is_authenticated:
         return jsonify({"id": current_user.id, "email": current_user.email})
     return jsonify({"error": "User not authenticated"}), 401
-
 
 # -------------------- CRYPTOCURRENCY ROUTES --------------------
 
@@ -72,7 +67,6 @@ def get_cryptocurrencies():
     cryptocurrencies = Cryptocurrency.query.all()
     return jsonify([crypto.to_dict() for crypto in cryptocurrencies])
 
-
 @routes.route("/cryptocurrencies/<int:crypto_id>", methods=["GET"])
 def get_cryptocurrency(crypto_id):
     cryptocurrency = Cryptocurrency.query.get(crypto_id)
@@ -80,14 +74,15 @@ def get_cryptocurrency(crypto_id):
         return jsonify({"message": "Cryptocurrency not found"}), 404
     return jsonify(cryptocurrency.to_dict())
 
-
 # -------------------- PRICE HISTORY --------------------
 
 @routes.route("/price-history/<int:cryptocurrency_id>", methods=["GET"])
 def get_price_history(cryptocurrency_id):
     history = PriceHistory.query.filter_by(cryptocurrency_id=cryptocurrency_id).all()
-    return jsonify([{"id": h.id, "price": str(h.price), "recorded_at": h.recorded_at.isoformat()} for h in history])
-
+    return jsonify([
+        {"id": h.id, "price": str(h.price), "recorded_at": h.recorded_at.isoformat()}
+        for h in history
+    ])
 
 # -------------------- USER CRYPTOCURRENCY TRACKING --------------------
 
@@ -95,8 +90,10 @@ def get_price_history(cryptocurrency_id):
 @login_required
 def get_user_cryptocurrencies():
     user_cryptos = UserCryptocurrency.query.filter_by(user_id=current_user.id).all()
-    return jsonify([{"id": uc.id, "crypto_id": uc.cryptocurrency_id, "alert_price": str(uc.alert_price)} for uc in user_cryptos])
-
+    return jsonify([
+        {"id": uc.id, "crypto_id": uc.cryptocurrency_id, "alert_price": str(uc.alert_price)}
+        for uc in user_cryptos
+    ])
 
 @routes.route("/user-cryptocurrencies", methods=["POST"])
 @login_required
@@ -108,17 +105,28 @@ def add_user_cryptocurrency():
     if not crypto_id or not alert_price:
         return jsonify({"error": "Missing crypto_id or alert_price"}), 400
 
+    # Convert alert_price to float since it's stored as a numeric value.
+    try:
+        alert_price = float(alert_price)
+    except ValueError:
+        return jsonify({"error": "Alert price must be a valid number"}), 400
+
     # Check if this cryptocurrency is already in the user's watchlist.
-    existing_entry = UserCryptocurrency.query.filter_by(user_id=current_user.id, cryptocurrency_id=crypto_id).first()
+    existing_entry = UserCryptocurrency.query.filter_by(
+        user_id=current_user.id, cryptocurrency_id=crypto_id
+    ).first()
     if existing_entry:
         return jsonify({"error": "Cryptocurrency already in watchlist"}), 409
 
-    user_crypto = UserCryptocurrency(user_id=current_user.id, cryptocurrency_id=crypto_id, alert_price=alert_price)
+    user_crypto = UserCryptocurrency(
+        user_id=current_user.id,
+        cryptocurrency_id=crypto_id,
+        alert_price=alert_price
+    )
     db.session.add(user_crypto)
     db.session.commit()
 
     return jsonify({"message": "Cryptocurrency added to user watchlist"}), 201
-
 
 # -------------------- TRENDING CRYPTOCURRENCIES --------------------
 
@@ -126,8 +134,10 @@ def add_user_cryptocurrency():
 @login_required
 def get_trending_cryptocurrencies():
     trending = TrendingCryptocurrency.query.order_by(TrendingCryptocurrency.rank.asc()).all()
-    return jsonify([{"id": t.id, "cryptocurrency_id": t.cryptocurrency_id, "rank": t.rank} for t in trending])
-
+    return jsonify([
+        {"id": t.id, "cryptocurrency_id": t.cryptocurrency_id, "rank": t.rank}
+        for t in trending
+    ])
 
 # -------------------- DEBUG SESSION --------------------
 

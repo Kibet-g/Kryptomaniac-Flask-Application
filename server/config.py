@@ -5,11 +5,13 @@ from flask_restful import Api
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
 
+# Define a naming convention for Alembic migrations
 metadata = MetaData(naming_convention={
     "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
 })
 
-db = SQLAlchemy(metadata=metadata)  # Do NOT pass `app` here
+# Initialize SQLAlchemy without binding to an app immediately
+db = SQLAlchemy(metadata=metadata)
 
 def create_app():
     app = Flask(__name__)
@@ -17,9 +19,11 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.json.compact = False
 
-    db.init_app(app)  # Initialize the app with db
-    migrate = Migrate(app, db)  # Migrations
-    api = Api(app)  # REST API
-    CORS(app)  # Enable CORS
-
+    # Initialize extensions
+    db.init_app(app)
+    Migrate(app, db)
+    Api(app)
+    # Enable CORS with credentials support
+    CORS(app, supports_credentials=True)
+    
     return app

@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
 from flask_login import login_required, login_user, logout_user, current_user
 from models import db, Cryptocurrency, UserCryptocurrency, PriceHistory, TrendingCryptocurrency, User
 
@@ -26,7 +26,7 @@ def register():
     db.session.commit()
 
     return jsonify({"message": "User registered successfully"}), 201
-    #OUR LOGIN ENDPOINT
+
 @routes.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
@@ -40,13 +40,19 @@ def login():
 
     login_user(user, remember=True)  # Ensure session persists
     return jsonify({"message": "Login successful", "user": {"id": user.id, "email": user.email}}), 200
-#OUR LOGOUT ENDPOINT
 
+# -------------------- LOGOUT ENDPOINT --------------------
+# Note: We remove @login_required so that even if the user is not authenticated,
+# the endpoint clears any residual session cookie and returns a success response.
 @routes.route("/logout", methods=["POST"])
-@login_required
 def logout():
-    logout_user()
-    return jsonify({"message": "Logged out successfully"}), 200
+    if current_user.is_authenticated:
+        logout_user()
+    response = jsonify({"message": "Logged out successfully"})
+    # Delete the session cookie from the client.
+    cookie_name = current_app.config.get("SESSION_COOKIE_NAME", "session")
+    response.delete_cookie(cookie_name)
+    return response, 200
 
 @routes.route("/check-session", methods=["GET"])
 def check_session():
@@ -105,13 +111,11 @@ def add_user_cryptocurrency():
     if not crypto_id or not alert_price:
         return jsonify({"error": "Missing crypto_id or alert_price"}), 400
 
-    # Convert alert_price to float since it's stored as a numeric value.
     try:
         alert_price = float(alert_price)
     except ValueError:
         return jsonify({"error": "Alert price must be a valid number"}), 400
 
-    # Check if this cryptocurrency is already in the user's watchlist.
     existing_entry = UserCryptocurrency.query.filter_by(
         user_id=current_user.id, cryptocurrency_id=crypto_id
     ).first()

@@ -61,6 +61,7 @@ const Home = () => {
       const response = await fetch('http://127.0.0.1:5000/user-cryptocurrencies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        //AUTHORIZATION HEADER JWT TOKEN
         credentials: 'include', // Include credentials if your endpoint requires authentication
         body: JSON.stringify({
           crypto_id: coin.id,
@@ -200,6 +201,7 @@ const Home = () => {
               {/*<p>24h Change</p>*/} 
               <p>Market Cap</p>
               <p>Add To WatchList</p>
+              <p>Remove</p>
             </div>
 
             {currentCoins.map((coin, index) => (

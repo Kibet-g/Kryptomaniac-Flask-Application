@@ -1,8 +1,53 @@
-from flask import Blueprint, jsonify, request, current_app
-from flask_login import login_required, login_user, logout_user, current_user
+# routes.py
+from flask import Blueprint, jsonify, request, current_app, g
+from functools import wraps
+import jwt
+import datetime
+
 from models import db, Cryptocurrency, UserCryptocurrency, PriceHistory, TrendingCryptocurrency, User
 
 routes = Blueprint("routes", __name__)
+
+# Helper functions for JWT
+def generate_token(user):
+    payload = {
+        "user_id": user.id,
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+    }
+    token = jwt.encode(payload, current_app.config["SECRET_KEY"], algorithm="HS256")
+    # In PyJWT>=2.0, jwt.encode returns a string if no options are provided
+    return token
+
+def decode_token(token):
+    try:
+        payload = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
+        return payload
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
+
+# JWT required decorator
+def jwt_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.headers.get("Authorization", None)
+        if not auth:
+            return jsonify({"error": "Authorization header missing"}), 401
+        parts = auth.split()
+        if parts[0].lower() != "bearer" or len(parts) != 2:
+            return jsonify({"error": "Invalid authorization header"}), 401
+        token = parts[1]
+        payload = decode_token(token)
+        if not payload:
+            return jsonify({"error": "Invalid or expired token"}), 401
+        user = User.query.get(payload["user_id"])
+        if not user:
+            return jsonify({"error": "User not found"}), 401
+        # Set user in Flask global for use in endpoints
+        g.current_user = user
+        return f(*args, **kwargs)
+    return decorated
 
 # -------------------- USER AUTHENTICATION --------------------
 
@@ -38,47 +83,46 @@ def login():
     if not user or not user.check_password(password):
         return jsonify({"error": "Invalid email or password"}), 401
 
-    login_user(user, remember=True)  # Ensure session persists
-    return jsonify({"message": "Login successful", "user": {"id": user.id, "email": user.email}}), 200
+    token = generate_token(user)
+    return jsonify({
+        "message": "Login successful",
+        "user": user.to_dict(),
+        "token": token
+    }), 200
 
-# -------------------- LOGOUT ENDPOINT --------------------
-# Note: We remove @login_required so that even if the user is not authenticated,
-# the endpoint clears any residual session cookie and returns a success response.
+# Since JWT is stateless, the logout endpoint simply instructs the client to remove the token.
 @routes.route("/logout", methods=["POST"])
 def logout():
-    if current_user.is_authenticated:
-        logout_user()
-    response = jsonify({"message": "Logged out successfully"})
-    # Delete the session cookie from the client.
-    cookie_name = current_app.config.get("SESSION_COOKIE_NAME", "session")
-    response.delete_cookie(cookie_name)
-    return response, 200
+    return jsonify({"message": "Logout successful. Please remove the token from your client."}), 200
 
 @routes.route("/check-session", methods=["GET"])
+@jwt_required
 def check_session():
-    if current_user.is_authenticated:
-        return jsonify({"user": {"id": current_user.id, "email": current_user.email}})
-    return jsonify({"error": "User not authenticated"}), 401
+    user = g.current_user
+    return jsonify({"user": user.to_dict()}), 200
 
 @routes.route("/me", methods=["GET"])
+@jwt_required
 def get_current_user():
-    if current_user.is_authenticated:
-        return jsonify({"id": current_user.id, "email": current_user.email})
-    return jsonify({"error": "User not authenticated"}), 401
+    user = g.current_user
+    # Check if the user has any favourite cryptocurrencies (watchlist)
+    if not user.cryptocurrencies:
+        return jsonify({"error": "No favourite cryptocurrencies found. Please add at least one to your watchlist."}), 403
+    return jsonify(user.to_dict()), 200
 
 # -------------------- CRYPTOCURRENCY ROUTES --------------------
 
 @routes.route("/cryptocurrencies", methods=["GET"])
 def get_cryptocurrencies():
     cryptocurrencies = Cryptocurrency.query.all()
-    return jsonify([crypto.to_dict() for crypto in cryptocurrencies])
+    return jsonify([crypto.to_dict() for crypto in cryptocurrencies]), 200
 
 @routes.route("/cryptocurrencies/<int:crypto_id>", methods=["GET"])
 def get_cryptocurrency(crypto_id):
     cryptocurrency = Cryptocurrency.query.get(crypto_id)
     if not cryptocurrency:
         return jsonify({"message": "Cryptocurrency not found"}), 404
-    return jsonify(cryptocurrency.to_dict())
+    return jsonify(cryptocurrency.to_dict()), 200
 
 # -------------------- PRICE HISTORY --------------------
 
@@ -88,21 +132,21 @@ def get_price_history(cryptocurrency_id):
     return jsonify([
         {"id": h.id, "price": str(h.price), "recorded_at": h.recorded_at.isoformat()}
         for h in history
-    ])
+    ]), 200
+
+# -------------------- USER CRYPTOCURRENCY TRACKING --------------------
 
 # -------------------- USER CRYPTOCURRENCY TRACKING --------------------
 
 @routes.route("/user-cryptocurrencies", methods=["GET"])
-@login_required
+@jwt_required
 def get_user_cryptocurrencies():
-    user_cryptos = UserCryptocurrency.query.filter_by(user_id=current_user.id).all()
-    return jsonify([
-        {"id": uc.id, "crypto_id": uc.cryptocurrency_id, "alert_price": str(uc.alert_price)}
-        for uc in user_cryptos
-    ])
+    user = g.current_user
+    user_cryptos = UserCryptocurrency.query.filter_by(user_id=user.id).all()
+    return jsonify([uc.to_dict() for uc in user_cryptos]), 200
 
 @routes.route("/user-cryptocurrencies", methods=["POST"])
-@login_required
+@jwt_required
 def add_user_cryptocurrency():
     data = request.get_json()
     crypto_id = data.get("crypto_id")
@@ -116,14 +160,15 @@ def add_user_cryptocurrency():
     except ValueError:
         return jsonify({"error": "Alert price must be a valid number"}), 400
 
+    user = g.current_user
     existing_entry = UserCryptocurrency.query.filter_by(
-        user_id=current_user.id, cryptocurrency_id=crypto_id
+        user_id=user.id, cryptocurrency_id=crypto_id
     ).first()
     if existing_entry:
         return jsonify({"error": "Cryptocurrency already in watchlist"}), 409
 
     user_crypto = UserCryptocurrency(
-        user_id=current_user.id,
+        user_id=user.id,
         cryptocurrency_id=crypto_id,
         alert_price=alert_price
     )
@@ -132,22 +177,44 @@ def add_user_cryptocurrency():
 
     return jsonify({"message": "Cryptocurrency added to user watchlist"}), 201
 
+# NEW: Remove cryptocurrency from user's watchlist
+@routes.route("/user-cryptocurrencies/<int:crypto_id>", methods=["DELETE"])
+@jwt_required
+def remove_user_cryptocurrency(crypto_id):
+    user = g.current_user
+    user_crypto = UserCryptocurrency.query.filter_by(
+        user_id=user.id, cryptocurrency_id=crypto_id
+    ).first()
+    if not user_crypto:
+        return jsonify({"error": "Cryptocurrency not found in your watchlist"}), 404
+
+    db.session.delete(user_crypto)
+    db.session.commit()
+
+    return jsonify({"message": "Cryptocurrency removed from watchlist"}), 200
+
+
 # -------------------- TRENDING CRYPTOCURRENCIES --------------------
 
 @routes.route("/trending-cryptocurrencies", methods=["GET"])
-@login_required
+@jwt_required
 def get_trending_cryptocurrencies():
     trending = TrendingCryptocurrency.query.order_by(TrendingCryptocurrency.rank.asc()).all()
     return jsonify([
         {"id": t.id, "cryptocurrency_id": t.cryptocurrency_id, "rank": t.rank}
         for t in trending
-    ])
+    ]), 200
 
 # -------------------- DEBUG SESSION --------------------
 
 @routes.route("/debug-session", methods=["GET"])
 def debug_session():
-    return jsonify({
-        "authenticated": current_user.is_authenticated,
-        "user_id": current_user.id if current_user.is_authenticated else None
-    })
+    # For debugging: if token is provided, decode and return user id.
+    auth = request.headers.get("Authorization", None)
+    if auth:
+        parts = auth.split()
+        if len(parts) == 2:
+            payload = decode_token(parts[1])
+            if payload:
+                return jsonify({"authenticated": True, "user_id": payload.get("user_id")})
+    return jsonify({"authenticated": False, "user_id": None})

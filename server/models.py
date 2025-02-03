@@ -1,8 +1,8 @@
+# models.py
 from config import db
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import UserMixin
 
-class User(UserMixin, db.Model):
+class User(db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -18,6 +18,9 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def to_dict(self):
+        return {"id": self.id, "username": self.username, "email": self.email}
 
     def __repr__(self):
         return f"<User {self.username}>"
@@ -56,7 +59,7 @@ class UserCryptocurrency(db.Model):
     cryptocurrency_id = db.Column(db.Integer, db.ForeignKey('cryptocurrencies.id'), nullable=False)
     alert_price = db.Column(db.Numeric(20, 8), nullable=False)
 
-    # Relationships (declared only once)
+    # Relationships
     user = db.relationship('User', back_populates='cryptocurrencies')
     cryptocurrency = db.relationship('Cryptocurrency', back_populates='user_associations')
 

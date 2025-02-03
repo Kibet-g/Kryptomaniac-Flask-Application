@@ -1,11 +1,12 @@
+// Register.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Register = () => {
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError]       = useState("");
   const navigate = useNavigate();
 
   const handleRegister = async (e) => {
@@ -90,14 +91,13 @@ const Register = () => {
   );
 };
 
-// Inline CSS styles (same as Login.jsx)
 const styles = {
   container: {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
     minHeight: "100vh",
-    background: "linear-gradient(to bottom, #1a1a2e, #16213e)", // Dark blue gradient
+    background: "linear-gradient(to bottom, #1a1a2e, #16213e)",
   },
   formContainer: {
     background: "#fff",

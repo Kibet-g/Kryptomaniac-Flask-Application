@@ -1,13 +1,14 @@
+// Login.jsx
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { CoinContext } from "../context/CoinContext";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
+  const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const { setUser } = useContext(CoinContext);
-  const navigate = useNavigate();
+  const [error, setError]       = useState("");
+  const { setUser }             = useContext(CoinContext);
+  const navigate              = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -18,14 +19,15 @@ const Login = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-        credentials: "include",  // Ensure session cookies are sent
       });
   
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Login failed");
   
-      setUser(data.user);  // Set user in context
-      navigate("/home");  // Redirect to home after successful login
+      // Save the token in localStorage for subsequent requests
+      localStorage.setItem("token", data.token);
+      setUser(data.user);
+      navigate("/home");
     } catch (err) {
       setError(err.message);
     }
@@ -67,21 +69,20 @@ const Login = () => {
         </form>
 
         <p style={styles.signupText}>
-          Don't have an account? <a href="/Register" style={styles.signupLink}>Sign Up</a>
+          Don't have an account? <a href="/register" style={styles.signupLink}>Sign Up</a>
         </p>
       </div>
     </div>
   );
 };
 
-// Inline CSS styles
 const styles = {
   container: {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
     minHeight: "100vh",
-    background: "linear-gradient(to bottom, #1a1a2e, #16213e)", // Dark blue gradient
+    background: "linear-gradient(to bottom, #1a1a2e, #16213e)",
   },
   formContainer: {
     background: "#fff",

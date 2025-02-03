@@ -1,3 +1,4 @@
+// Coin.jsx
 import React, { useContext, useEffect, useState } from 'react';
 import swal from 'sweetalert';
 import { useParams } from 'react-router-dom';
@@ -7,12 +8,11 @@ import LineChart from '../../../components/LineChart/LineChart';
 const Coin = () => {
   const { coinId } = useParams();
   const [coinData, setCoinData] = useState(null);
-  const { currency, user } = useContext(CoinContext); // Access user from context
+  const { currency, user } = useContext(CoinContext);
   const [historicalData, setHistoricalData] = useState(null);
   const [loadingPercentage, setLoadingPercentage] = useState(0);
   const [alertPrice, setAlertPrice] = useState('');
 
-  // Inline CSS styles
   const containerStyle = {
     padding: '20px',
     fontFamily: 'Arial, sans-serif',
@@ -87,10 +87,13 @@ const Coin = () => {
   useEffect(() => {
     const fetchCoinData = async () => {
       try {
+        const token = localStorage.getItem("token");
         const response = await fetch(`http://127.0.0.1:5000/cryptocurrencies/${coinId}`, {
           method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
         });
         const data = await response.json();
         setCoinData(data);
@@ -114,7 +117,6 @@ const Coin = () => {
       }
     };
 
-    // Reset loading percentage and fetch new data whenever currency or coinId changes
     setLoadingPercentage(0);
     fetchCoinData();
     fetchHistoricalData();
@@ -127,10 +129,13 @@ const Coin = () => {
     }
 
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch('http://127.0.0.1:5000/user-cryptocurrencies', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           crypto_id: coinId,
           alert_price: alertPrice,
@@ -162,7 +167,6 @@ const Coin = () => {
 
   return (
     <div style={containerStyle}>
-      {/* Header: Image and Coin Name */}
       <div style={headerStyle}>
         <img src={coinData.logo_url} alt={coinData.name} style={imageStyle} />
         <p style={{ fontSize: '24px', margin: 0 }}>
@@ -172,12 +176,10 @@ const Coin = () => {
         </p>
       </div>
       
-      {/* Chart */}
       <div style={chartStyle}>
         <LineChart historicalData={historicalData} />
       </div>
 
-      {/* Coin Information */}
       <div style={infoContainerStyle}>
         <ul style={infoListStyle}>
           <li style={infoItemTitleStyle}>Current Price</li>
@@ -195,7 +197,6 @@ const Coin = () => {
         </ul>
       </div>
 
-      {/* Alert Price Input and Button */}
       <div style={{ marginTop: '20px', textAlign: 'center' }}>
         <input
           type="number"
